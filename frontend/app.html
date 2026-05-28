@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SymptoCare | Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="config.js"></script>
+    <script>
+      // Fast auth gate: token presence + backend validation
+      (function () {
+        try {
+          var token = sessionStorage.getItem('symptocare.token');
+          if (!token) {
+            // No user stored — send to login page immediately
+            window.location.replace('login.html');
+            return;
+          }
+          var apiBase = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || 'http://127.0.0.1:8000';
+          fetch(apiBase + '/profile', {
+            headers: { Authorization: 'Bearer ' + token }
+          }).then(function (res) {
+            if (!res.ok) {
+              window.location.replace('login.html');
+            }
+          }).catch(function () {
+            window.location.replace('login.html');
+          });
+        } catch (e) {
+          // If accessing localStorage fails for any reason, redirect to login
+          window.location.replace('login.html');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="bg-grid"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <header class="topbar topbar-app">
+      <div class="logo">SymptoCare</div>
+      <div class="topbar-actions">
+        <span id="userChip" class="user-chip"></span>
+        <span id="appStatus" class="status-pill" role="status" aria-live="polite"></span>
+        <button id="signOutBtn" class="ghost-btn" type="button">Sign out</button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="app">
+        <aside class="sidebar">
+          <button class="nav-btn is-active" data-view="checker" type="button">Predictor</button>
+          <button class="nav-btn" data-view="history" type="button">History</button>
+          <button class="nav-btn" data-view="profile" type="button">Profile</button>
+        </aside>
+
+        <section class="panel app-panel">
+          <div id="checkerView" class="view is-active">
+            <h2>Disease predictor</h2>
+            <p class="muted">Select symptoms and click predict.</p>
+            <div class="form-stack is-active">
+              <label>
+                Search symptoms
+                <input
+                  id="symptomSearch"
+                  type="text"
+                  placeholder="Search symptom"
+                />
+              </label>
+              <div class="symptom-box">
+                <div id="symptomList" class="symptom-list"></div>
+              </div>
+              <div class="symptom-meta">
+                <span id="selectedCount" class="muted">0 selected</span>
+                <button id="checkBtn" class="primary-btn" type="button">Predict disease</button>
+              </div>
+            </div>
+
+            <div id="resultCard" class="result-card hidden">
+              <div>
+                <p class="eyebrow">Predicted disease</p>
+                <h3 id="resultTitle">--</h3>
+                <p id="resultDesc" class="muted">--</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="historyView" class="view">
+            <div class="history-header">
+              <div>
+                <h2>History</h2>
+                <p class="muted">Click an item to view. Use delete to remove it.</p>
+              </div>
+              <button id="clearHistoryBtn" class="ghost-btn" type="button">Clear all</button>
+            </div>
+            <div id="historyList" class="history-list"></div>
+          </div>
+
+          <div id="profileView" class="view">
+            <h2>Profile</h2>
+            <div class="profile-grid">
+              <section class="profile-summary">
+                <div class="avatar" id="profileAvatar">SC</div>
+                <div class="profile-summary-text">
+                  <p class="eyebrow">Account</p>
+                  <h3 id="profileName">--</h3>
+                  <p id="profileEmail" class="muted">--</p>
+                  <p id="profileDate" class="muted">--</p>
+                </div>
+                <button id="editProfileBtn" class="ghost-btn" type="button">Edit profile</button>
+              </section>
+
+              <section class="profile-settings">
+                <div class="section-header">
+                  <div>
+                    <h3>Personal info</h3>
+                    <p class="muted">Update how your profile appears.</p>
+                  </div>
+                </div>
+
+                <form id="profileEditForm" class="profile-edit-form hidden">
+                  <div class="form-grid">
+                    <label>
+                      Name
+                      <input id="editName" type="text" />
+                    </label>
+                    <label>
+                      Email
+                      <input id="editEmail" type="email" />
+                    </label>
+                  </div>
+
+                  <div class="section-divider">Security</div>
+
+                  <div class="form-grid">
+                    <label>
+                      Current password
+                      <input id="currentPassword" type="password" placeholder="Enter current password" />
+                    </label>
+                    <label>
+                      New password
+                      <input id="newPassword" type="password" placeholder="Enter new password" />
+                    </label>
+                    <label>
+                      Confirm new password
+                      <input id="confirmPassword" type="password" placeholder="Repeat new password" />
+                    </label>
+                  </div>
+                  <div class="edit-actions">
+                    <button id="saveProfileBtn" class="primary-btn" type="button">Save changes</button>
+                    <button id="cancelProfileBtn" class="ghost-btn" type="button">Cancel</button>
+                  </div>
+                </form>
+              </section>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
