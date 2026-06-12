@@ -22,9 +22,18 @@ const requestJson = async (url, options = {}) => {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
+  
+  // Log for debugging
+  console.log("API Response:", {
+    url,
+    status: response.status,
+    ok: response.ok
+  });
+  
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.detail || "Request failed.");
+    console.error("API Error:", payload);
+    throw new Error(payload.detail || payload.message || `Request failed with status ${response.status}`);
   }
   return response.json();
 };
