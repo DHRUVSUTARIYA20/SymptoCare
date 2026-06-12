@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from vercel_serverless import create_asgi_handler
 
 # Load environment variables
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
@@ -118,8 +117,4 @@ def login(payload: AuthPayload):
 
 
 # Export handler for Vercel
-try:
-	handler = create_asgi_handler(app)
-except ImportError:
-	# Fallback if vercel_serverless is not available
-	handler = app
+handler = app
