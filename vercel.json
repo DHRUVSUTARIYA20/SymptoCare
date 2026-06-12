@@ -1,20 +1,5 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "frontend",
-  "installCommand": "uv pip install --system -r requirements.txt",
-  "functions": {
-    "api/index.py": {
-      "runtime": "python3.9"
-    }
-  },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ]
+  "installCommand": "uv pip install --system -r requirements.txt"
 }
