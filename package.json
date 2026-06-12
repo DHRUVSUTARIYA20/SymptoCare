@@ -1,0 +1,18 @@
+{
+  "name": "symptocare",
+  "version": "1.0.0",
+  "description": "SymptoCare - Disease Prediction Application",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'Building frontend...'",
+    "dev": "python -m uvicorn backend.app:app --reload",
+    "start": "python -m uvicorn backend.app:app"
+  },
+  "keywords": [
+    "disease",
+    "prediction",
+    "symptoms"
+  ],
+  "author": "",
+  "license": "MIT"
+}
