@@ -1,3 +1,5 @@
 window.APP_CONFIG = {
-  API_BASE: "http://127.0.0.1:8000",
+  API_BASE: window.location.hostname === "localhost" 
+    ? "http://localhost:8000" 
+    : `https://${window.location.hostname}/api`
 };
