@@ -138,3 +138,6 @@ def update_profile(payload: ProfileUpdate, authorization: str = Header(None)):
 # Export handler for Vercel
 # Vercel requires the ASGI app to be exported as 'app'
 # FastAPI is already an ASGI application
+
+# For Vercel to recognize this as a Python function
+__all__ = ['app']
