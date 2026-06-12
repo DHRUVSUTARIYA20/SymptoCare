@@ -352,19 +352,31 @@ const fetchSymptoms = async () => {
 };
 
 const predictDisease = async (symptoms) => {
-  const response = await fetch(`${API_BASE}/predict`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ symptoms }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const message = errorData.detail || "Prediction failed.";
-    throw new Error(message);
+  const token = loadToken();
+  const headers = { "Content-Type": "application/json" };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE}/predict`, {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: JSON.stringify({ symptoms }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const message = errorData.detail || `HTTP ${response.status}: Prediction failed.`;
+      throw new Error(message);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Predict error:", error, "API Base:", API_BASE);
+    throw error;
+  }
 };
 
 const init = async () => {
@@ -443,13 +455,13 @@ checkBtn.addEventListener("click", async () => {
   try {
     const prediction = await predictDisease(checked);
     const description = prediction.description || "Description not available.";
-    resultTitle.textContent = prediction.disease;
+    resultTitle.textContent = prediction.predicted_disease;
     resultDesc.textContent = description;
     resultCard.classList.remove("hidden");
 
     const labelMap = new Map(symptomData.map((item) => [item.key, item.label]));
     lastPrediction = {
-      disease: prediction.disease,
+      disease: prediction.predicted_disease,
       symptoms: checked.map((item) => labelMap.get(item) || item),
       description,
     };

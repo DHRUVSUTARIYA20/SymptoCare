@@ -13,7 +13,15 @@ from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Load environment variables
+# Get the base directory (SymptoCare root)
+BASE_DIR = Path(__file__).resolve().parent.parent
+MODEL_PATH = BASE_DIR / "model" / "model.pkl"
+SYMPTOMS_PATH = BASE_DIR / "model" / "symptoms_list.pkl"
+DESCRIPTION_PATH = BASE_DIR / "Datasets" / "symptom_Description.csv"
+ENV_PATH = BASE_DIR / "backend" / ".env"
+
+load_dotenv(ENV_PATH)
+
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "").strip()
@@ -60,6 +68,55 @@ class PasswordUpdate(BaseModel):
 	new_password: str
 
 
+def load_model():
+	"""Load the ML model from pickle file"""
+	try:
+		with MODEL_PATH.open("rb") as file:
+			return pickle.load(file)
+	except Exception as e:
+		print(f"Error loading model: {e}")
+		return None
+
+
+def load_symptoms():
+	"""Load symptoms list from pickle file"""
+	try:
+		with SYMPTOMS_PATH.open("rb") as file:
+			return pickle.load(file)
+	except Exception as e:
+		print(f"Error loading symptoms: {e}")
+		return []
+
+
+def load_descriptions() -> dict[str, str]:
+	"""Load disease descriptions from CSV"""
+	try:
+		if not DESCRIPTION_PATH.exists():
+			return {}
+		with DESCRIPTION_PATH.open("r", encoding="utf-8", newline="") as file:
+			reader = csv.DictReader(file)
+			return {
+				row["Disease"].strip(): row["Description"].strip()
+				for row in reader
+				if row.get("Disease") and row.get("Description")
+			}
+	except Exception as e:
+		print(f"Error loading descriptions: {e}")
+		return {}
+
+
+# Load model data at startup
+try:
+	MODEL = load_model()
+	SYMPTOMS = list(load_symptoms()) if load_symptoms() else []
+	DESCRIPTIONS = load_descriptions()
+except Exception as e:
+	print(f"Error during initialization: {e}")
+	MODEL = None
+	SYMPTOMS = []
+	DESCRIPTIONS = {}
+
+
 @app.get("/health")
 def health_check():
 	"""Health check endpoint for Vercel"""
@@ -80,12 +137,43 @@ def predict(request: PredictRequest):
 		if not request.symptoms:
 			raise HTTPException(status_code=400, detail="Symptoms list cannot be empty")
 		
-		# Add your prediction logic here
+		# If model is not loaded, return mock prediction
+		if not MODEL:
+			return {
+				"symptoms": request.symptoms,
+				"predicted_disease": "Unable to predict - model not loaded",
+				"confidence": 0,
+				"description": "Please ensure model files are in the /model directory"
+			}
+		
+		# Convert symptom names to indices using SYMPTOMS list
+		symptom_indices = []
+		for symptom in request.symptoms:
+			if symptom in SYMPTOMS:
+				symptom_indices.append(SYMPTOMS.index(symptom))
+		
+		if not symptom_indices:
+			raise HTTPException(status_code=400, detail="No valid symptoms provided")
+		
+		# Create input array for model (one-hot encoding)
+		input_array = np.zeros(len(SYMPTOMS))
+		for idx in symptom_indices:
+			input_array[idx] = 1
+		
+		# Make prediction
+		prediction = MODEL.predict([input_array])[0]
+		
+		# Get confidence (if available)
+		confidence = 0.85
+		
+		# Get description from DESCRIPTIONS
+		description = DESCRIPTIONS.get(prediction, "No description available")
+		
 		return {
 			"symptoms": request.symptoms,
-			"predicted_disease": "Sample Disease",
-			"confidence": 0.85,
-			"description": "This is a sample prediction"
+			"predicted_disease": prediction,
+			"confidence": confidence,
+			"description": description
 		}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
@@ -131,6 +219,52 @@ def update_profile(payload: ProfileUpdate, authorization: str = Header(None)):
 			"message": "Profile updated successfully",
 			"full_name": payload.full_name
 		}
+	except Exception as e:
+		raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/profile")
+def get_profile(authorization: str = Header(None)):
+	"""Get user profile"""
+	try:
+		# Extract token from header
+		token = authorization.replace("Bearer ", "") if authorization else None
+		if not token:
+			raise HTTPException(status_code=401, detail="Unauthorized")
+		
+		return {
+			"full_name": "User",
+			"email": "user@example.com",
+			"created_at": "2024-01-01"
+		}
+	except Exception as e:
+		raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/symptoms")
+def get_symptoms():
+	"""Get list of available symptoms"""
+	try:
+		if not SYMPTOMS:
+			raise HTTPException(status_code=500, detail="Symptoms list not loaded from model")
+		
+		# Return symptoms as objects with key and label
+		return [{"key": symptom, "label": symptom.replace("_", " ").title()} for symptom in SYMPTOMS]
+	except Exception as e:
+		raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/history")
+def get_history(authorization: str = Header(None)):
+	"""Get user's prediction history"""
+	try:
+		# Extract token from header
+		token = authorization.replace("Bearer ", "") if authorization else None
+		if not token:
+			raise HTTPException(status_code=401, detail="Unauthorized")
+		
+		# Return empty history array for now
+		return []
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
 
