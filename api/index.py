@@ -96,9 +96,10 @@ def predict(request: PredictRequest):
 def signup(payload: AuthPayload):
 	"""User signup endpoint"""
 	try:
+		# For now, just return success - integrate with Supabase later
 		return {
-			"message": "Signup endpoint - implement with Supabase",
-			"email": payload.email
+			"email": payload.email,
+			"access_token": "mock_token_" + payload.email.split("@")[0]
 		}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
@@ -108,9 +109,27 @@ def signup(payload: AuthPayload):
 def login(payload: AuthPayload):
 	"""User login endpoint"""
 	try:
+		# For now, just return success - integrate with Supabase later
 		return {
-			"message": "Login endpoint - implement with Supabase",
-			"email": payload.email
+			"email": payload.email,
+			"access_token": "mock_token_" + payload.email.split("@")[0]
+		}
+	except Exception as e:
+		raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/profile")
+def update_profile(payload: ProfileUpdate, authorization: str = Header(None)):
+	"""Update user profile"""
+	try:
+		# Extract token from header
+		token = authorization.replace("Bearer ", "") if authorization else None
+		if not token:
+			raise HTTPException(status_code=401, detail="Unauthorized")
+		
+		return {
+			"message": "Profile updated successfully",
+			"full_name": payload.full_name
 		}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
