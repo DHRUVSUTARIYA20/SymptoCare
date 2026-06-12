@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+numpy
+scikit-learn
+pydantic
+requests
+python-dotenv
+vercel-serverless
